@@ -11,7 +11,7 @@ Add a config.yaml file with the following structure
 ```
 server:
     hostlist:
-        - "<public_ip>"
+        - "<server_ip>"
     port: 10127
 client:
     random-nick: true
