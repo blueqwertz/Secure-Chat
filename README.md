@@ -17,3 +17,7 @@ client:
     random-nick: true
     tui: true
 ```
+
+### Demo Pictures
+
+![alt text](https://secure-msg.000webhostapp.com/demo1.jpg "Demo Picture")
