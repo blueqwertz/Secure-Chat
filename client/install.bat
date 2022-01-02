@@ -9,3 +9,4 @@ py -m pip install windows-curses
 py -m pip install colorama
 py -m pip install pynput
 py -m pip install names
+py -m pip install requests
