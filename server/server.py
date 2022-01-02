@@ -8,7 +8,6 @@ import hmac
 import sys
 import uuid
 import os
-import random
 
 HEADER_SIZE = 1024
 

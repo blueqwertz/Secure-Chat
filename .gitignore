@@ -5,5 +5,4 @@ dist/
 client.spec
 __pycache__/
 testing/
-client/output
-*.yaml
+client/output/
