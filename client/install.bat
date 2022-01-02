@@ -10,3 +10,4 @@ py -m pip install colorama
 py -m pip install pynput
 py -m pip install names
 py -m pip install requests
+py -m pip install tabulate

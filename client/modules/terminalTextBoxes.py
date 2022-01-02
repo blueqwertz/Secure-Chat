@@ -16,9 +16,6 @@ PLATFORM_LINUX = ["linux", "linux2"]
 PLATFORM_WINDOWS = ["Windows", "win32", "cygwin"]
 PLATFORM_MAC = ["Mac", "darwin", "os2", "os2emx"]
 
-if sys.platform == "win32":
-    import win32clipboard
-
 # Char color
 CHAR_COLOR = {
     "black": 1 if PLATFORM in PLATFORM_LINUX else 1,

@@ -15,6 +15,7 @@ import tkinter as tk
 from tkinter import filedialog
 
 HEADER_SIZE = 1024
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 
 class Client(object):
@@ -72,7 +73,7 @@ class Client(object):
         self.tui = self.conf["client"]["tui"]
 
         if self.tui:
-            self.chat = Chat(debug=False)
+            self.chat = Chat(debug=True)
         self.print("Starting Secure-Chat Client", color="green")
         self.server_pub = requests.get("https://secure-msg.000webhostapp.com/public.pem").text.replace("\\n", "\n").encode(self.format)
         self.print("Got server public key", color="green")
@@ -216,6 +217,11 @@ class Client(object):
                     dec_message = crypto.aes_decrypt(data["messagedata"], data["key"], data["nonce"], True)
                     self.print(str(dec_message), color=["white"])
                     continue
+                
+                elif message["type"] == "whisper":
+                    key = crypto.decrypt(message["data"]["key"], decodeData=False)
+                    message = crypto.aes_decrypt(message["data"]["message"], key, message["data"]["nonce"], True)
+                    self.print(str(message), color="magenta")
 
                 elif message["type"] == "file":
                     data = message["data"]
@@ -366,7 +372,7 @@ class Client(object):
                     if self.tui:
                         self.chat.tb.clear_text_items("setup", "Chat")
                         self.chat.tb.update()
-                    self.print("Cleared all messages", color="yellow")
+                    self.print("Server cleared all messages", color="yellow")
                     continue
 
                 else:
@@ -493,14 +499,18 @@ class Client(object):
             if whisper_id:
                 msg = cmd
                 msg = msg.replace(name, "").replace("whisper", "").strip()
-                self.print("You whispered to {}: {}".format(
+                self.print("you whispered to {}: {}".format(
                     name, msg), color="magenta")
+                message = "{} whispered to you: {}".format(self.nickname, msg)
+                crypto.generate_aes_key()
+                encrypted_message, nonce = crypto.aes_encrypt(message)
+                key = crypto.encrypt(crypto.AES_KEY, self.userlist[whisper_id]["key"])
                 self.send(
-                    "message",
+                    "whisper",
                     {
-                        "message": "{} whispered to you: {}".format(
-                            self.nickname, msg
-                        ),
+                        "message": encrypted_message,
+                        "key": key,
+                        "nonce": nonce,
                         "id": whisper_id,
                         "room": whisper_room
                     },

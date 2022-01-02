@@ -8,14 +8,17 @@ import hmac
 import sys
 import uuid
 import os
+import yaml
 
 HEADER_SIZE = 1024
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 
 class Client():
-    def __init__(self, client, addr) -> None:
 
-        self.socket = client
+    def __init__(self, socket, addr) -> None:
+
+        self.socket = socket
         self.addr = addr
         self.id = None
         self.nickname = None
@@ -50,12 +53,15 @@ class Client():
 
 
 class Server():
+
     def __init__(self) -> None:
 
         self.debug = True
+        self.conf = self.read_conf()
 
-        self.host = "0.0.0.0"
-        self.port = 10127
+        self.host = self.conf["server"]["host"]
+        self.port = self.conf["server"]["port"]
+
         self.format = "utf-8"
 
         self.version = "1.0.0"
@@ -104,7 +110,7 @@ class Server():
                 client, address = self.server.accept()
                 address = address[0]
                 self.log("Incomming connection")
-                client = Client(client=client, addr=address)
+                client = Client(socket=client, addr=address)
                 if not self.fail2ban(address):
                     client.send("error", "[-] Connection refused")
                     continue
@@ -238,6 +244,11 @@ class Server():
                         if room in message["data"]:
                             room = message["data"]["room"]
                         self.connections[room]["clients"][message["data"]["id"]].send("message", message["data"]["message"])
+                    except KeyError:
+                        pass
+                elif message["type"] == "whisper":
+                    try:
+                        self.connections[message["data"]["room"]]["clients"][message["data"]["id"]].send("whisper", message["data"])
                     except KeyError:
                         pass
                 elif message["type"] == "create-chatroom":
@@ -389,7 +400,7 @@ class Server():
     ###################
 
     def console(self):
-        """take admin input and broadcast it to all clients"""
+        """take admin input from console"""
         try:
             while True:
                 message = input("").lower()
@@ -411,7 +422,7 @@ class Server():
                             self.debug = True
                         elif message.split(" ")[1] == "off":
                             self.debug = False
-                        print("debug: {}".format("on" if self.debug else "off"))
+                        print("debug mode set to {}".format(self.debug))
                     except Exception:
                         print("invalid input")
                 if message.startswith("clearall"):
@@ -510,6 +521,14 @@ class Server():
                 if client.id == id:
                     return client
         return None
+
+    def read_conf(self):
+        with open('config.yaml', 'r') as file:
+            try:
+                conf = yaml.safe_load(file)
+                return conf
+            except yaml.YAMLError as exc:
+                print(exc)
 
 
 if __name__ == "__main__":
