@@ -6,7 +6,7 @@
 
 Run the install.bat file, which is located in the client/ folder to install all required dependencies.
 
-Add a config.yaml file with the following structure
+Configure the config.yaml file in the client folder like this
 
 ```
 server:
@@ -16,6 +16,14 @@ server:
 client:
     random-nick: true
     tui: true
+```
+
+...and the config.yaml in the server folder like this:
+
+```
+server:
+    host: "0.0.0.0"
+    port: 10127
 ```
 
 ### Demo Pictures
