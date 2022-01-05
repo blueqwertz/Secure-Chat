@@ -122,12 +122,12 @@ class Client(object):
         Receive a package from the server
         :return:"""
         header = int.from_bytes(self.client.recv(HEADER_SIZE), "big")
+        remaining = header
         data = b""
-        all = 0
-        progress = 0
         while len(data) < header:
-            progress += min(16384, header - len(data))
-            data += self.client.recv(min(16384, header - len(data)))
+            to_read = min(remaining, HEADER_SIZE)
+            data += self.client.recv(to_read)
+            remaining -= to_read
         package = bson.loads(data)
         return package
 
@@ -582,8 +582,8 @@ class Client(object):
                     l = data.read()
                     fingerprint = hashlib.sha256(l).hexdigest()
                     size = os.path.getsize(path)
-                    if size > 10000000:  # 10MB
-                        self.print("[-] Filesize to big (max 10MB)", color="yellow")
+                    if size > 100000000:  # 100MB
+                        self.print("[-] Filesize to big (max 100MB)", color="yellow")
                         return
                     ext = os.path.splitext(path)[1]
                     # name = path.replace("\\", "/").split("/")[-1].replace(ext, "")

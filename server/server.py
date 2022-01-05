@@ -42,9 +42,12 @@ class Client():
         """Receive a package from the client."""
         try:
             header = int.from_bytes(self.socket.recv(HEADER_SIZE), "big")
+            remaining = header
             data = b""
             while len(data) < header:
-                data += self.socket.recv(min(2048, header - len(data)))
+                to_read = min(remaining, HEADER_SIZE)
+                data += self.socket.recv(to_read)
+                remaining -= to_read
             package = bson.loads(data)
         except socket.error:
             raise socket.error
