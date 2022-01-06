@@ -7,3 +7,4 @@ py -m pip install pycryptodome
 py -m pip install uuid
 py -m pip install pyyaml
 py -m pip install hmac
+py -m pip install pyotp

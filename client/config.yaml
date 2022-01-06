@@ -4,4 +4,4 @@ server:
     port: 10127
 client:
     random-nick: true
-    tui: true
+    tui: false

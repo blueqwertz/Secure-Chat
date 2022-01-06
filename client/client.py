@@ -1,7 +1,8 @@
 import os
 import socket
 import threading
-from colorama import Fore, Style, init
+from colorama import Fore, Style
+import colorama
 from tabulate import tabulate
 from modules.chat import Chat
 import modules.crypto as crypto
@@ -13,8 +14,10 @@ import requests
 import hashlib
 import tkinter as tk
 from tkinter import filedialog
+import time
 
 HEADER_SIZE = 1024
+BUFFERSIZE = 2 ** 16
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 
@@ -61,10 +64,10 @@ class Client(object):
         self.unmanaged_packages = []
 
     def start(self):
-        init(convert=True)
         """
         Start the client
         """
+        colorama.init(convert=True)
 
         self.hostlist = self.conf["server"]["hostlist"]
         self.port = self.conf["server"]["port"]
@@ -90,7 +93,7 @@ class Client(object):
                 continue
         if not self.host:
             self.print("[-] Could not connect to Server", color="red")
-            return
+            raise Exception
         self.print("Connected to {}".format(self.host), color="green")
 
         self.auth = input("Verification code: ")
@@ -124,10 +127,16 @@ class Client(object):
         header = int.from_bytes(self.client.recv(HEADER_SIZE), "big")
         remaining = header
         data = b""
-        while len(data) < header:
-            to_read = min(remaining, HEADER_SIZE)
+        if header > 5000000:
+            start = time.time_ns()
+        while remaining > 0:
+            to_read = min(remaining, BUFFERSIZE)
             data += self.client.recv(to_read)
             remaining -= to_read
+        # data = self.client.recv(header)
+        print(len(data))
+        if header > 5000000:
+            print("Received package in {}ms".format(int((time.time_ns() - start) / 1000000)))
         package = bson.loads(data)
         return package
 
@@ -217,7 +226,7 @@ class Client(object):
                     dec_message = crypto.aes_decrypt(data["messagedata"], data["key"], data["nonce"], True)
                     self.print(str(dec_message), color=["white"])
                     continue
-                
+
                 elif message["type"] == "whisper":
                     key = crypto.decrypt(message["data"]["key"], decodeData=False)
                     message = crypto.aes_decrypt(message["data"]["message"], key, message["data"]["nonce"], True)
@@ -468,7 +477,7 @@ class Client(object):
             table = tabulate(commands, tablefmt="plain")
             for line in table.split("\n"):
                 self.print(line, color="magenta")
-            self.print("* Requires admin priviliges", color="yellow")
+            self.print("* Requires admin priviliges", color="magenta")
 
         elif cmd == "list":
             room_list = {self.room: ["you"]}
@@ -594,6 +603,8 @@ class Client(object):
                     self.print("[-] File does not exist", color="yellow")
             if cmd == "file":
                 path = self.file_select()
+                if path is None:
+                    return
                 send_file(path)
 
             elif len(cmd.split(" ")) > 1:

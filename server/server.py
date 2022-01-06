@@ -9,8 +9,11 @@ import sys
 import uuid
 import os
 import yaml
+import pyotp
+# import qrcode_terminal
 
 HEADER_SIZE = 1024
+BUFFERSIZE = 2 ** 16
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 
@@ -44,8 +47,8 @@ class Client():
             header = int.from_bytes(self.socket.recv(HEADER_SIZE), "big")
             remaining = header
             data = b""
-            while len(data) < header:
-                to_read = min(remaining, HEADER_SIZE)
+            while remaining > 0:
+                to_read = min(remaining, BUFFERSIZE)
                 data += self.socket.recv(to_read)
                 remaining -= to_read
             package = bson.loads(data)
@@ -82,6 +85,8 @@ class Server():
         self.connection_ban_time = 120
 
         self.authkey = os.environ["authkey"].encode(self.format)
+        self.totpgenerator = pyotp.TOTP(self.authkey)
+        # qrcode_terminal.draw("otpauth://totp/Secure-Chat?secret=5CJB43ZL3TWYGXS6")
 
         self.threads = [
             threading.Thread(target=self.listen, daemon=True),
@@ -480,14 +485,7 @@ class Server():
 
     def totp(self):
         """Generate a TOTP code."""
-        now = int(time.time() // 30)
-        msg = now.to_bytes(8, "big")
-        digest = hmac.new(self.authkey, msg, "sha1").digest()
-        offset = digest[19] & 0xF
-        code = digest[offset: offset + 4]
-        code = int.from_bytes(code, "big") & 0x7FFFFFFF
-        code = code % 1000000
-        return "{:06d}".format(code)
+        return self.totpgenerator.now()
 
     def get_clients(self, room):
         """Get all clients in a room."""
