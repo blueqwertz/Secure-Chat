@@ -17,7 +17,6 @@ from tkinter import filedialog
 import time
 
 HEADER_SIZE = 1024
-BUFFERSIZE = 2 ** 16
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 
@@ -125,18 +124,9 @@ class Client(object):
         Receive a package from the server
         :return:"""
         header = int.from_bytes(self.client.recv(HEADER_SIZE), "big")
-        remaining = header
-        data = b""
-        if header > 5000000:
-            start = time.time_ns()
-        while remaining > 0:
-            to_read = min(remaining, BUFFERSIZE)
-            data += self.client.recv(to_read)
-            remaining -= to_read
-        # data = self.client.recv(header)
-        print(len(data))
-        if header > 5000000:
-            print("Received package in {}ms".format(int((time.time_ns() - start) / 1000000)))
+        data = self.client.recv(header)
+        while len(data) < header:
+            data += self.client.recv(header - len(data))
         package = bson.loads(data)
         return package
 
