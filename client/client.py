@@ -1,5 +1,6 @@
 import os
 import socket
+from struct import pack
 import threading
 from colorama import Fore, Style
 import colorama
@@ -14,6 +15,7 @@ import requests
 import hashlib
 import tkinter as tk
 from tkinter import filedialog
+import sys
 import time
 
 HEADER_SIZE = 1024
@@ -32,6 +34,8 @@ class Client(object):
 
         self.hostlist = None
         self.port = None
+
+        self.verbose = "-v" in sys.argv
 
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -62,6 +66,10 @@ class Client(object):
 
         self.unmanaged_packages = []
 
+        self.bytes_sent = 0
+        self.bytes_received = 0
+        self.connection_start = None
+
     def start(self):
         """
         Start the client
@@ -78,13 +86,17 @@ class Client(object):
             self.chat = Chat(debug=True)
         self.print("Starting Secure-Chat Client", color="green")
         self.server_pub = requests.get("https://secure-msg.000webhostapp.com/public.pem").text.replace("\\n", "\n").encode(self.format)
-        self.print("Got server public key", color="green")
-        crypto.generate_key()
-        self.print("\rGenerated key pair   ", color="green")
+        if self.verbose:
+            self.print("debug: Got server public key")
+        crypto.generate_key(self.verbose)
+        if self.verbose:
+            self.print("\rdebug: Generated key pair   ")
         for addr in self.hostlist:
             try:
                 if addr == "localhost":
                     addr = socket.gethostbyname(socket.gethostname())
+                if self.verbose:
+                    self.print("debug: Trying to connect to {}:{}".format(addr, self.port))
                 self.client.connect((addr, self.port))
                 self.host = addr
                 break
@@ -93,7 +105,12 @@ class Client(object):
         if not self.host:
             self.print("[-] Could not connect to Server", color="red")
             raise Exception
-        self.print("Connected to {}".format(self.host), color="green")
+        if self.verbose:
+            self.print("debug: Connected to {}".format(self.host))
+        else:
+            self.print("Connected to Server", color="green")
+
+        self.connection_start = time.time()
 
         self.auth = input("Verification code: ")
 
@@ -104,14 +121,12 @@ class Client(object):
         self.threads.append(threading.Thread(target=self.thread_handle_package, daemon=True).start())
 
         if self.tui:
-
             self.chat.tb.start()
             self.chat._change_user_name(f"{self.nickname}@{self.room}")
             self.chat._change_user_name("{}@{}".format(self.nickname, self.room))
             self.chat._update_user_list(self.userlist, self.room)
             self.chat.writeCallBack = self.thread_user_input
             self.chat.tb.update()
-
         else:
             self.threads.append(threading.Thread(target=self.thread_user_input).start())
 
@@ -127,6 +142,7 @@ class Client(object):
         data = self.client.recv(header)
         while len(data) < header:
             data += self.client.recv(header - len(data))
+        self.bytes_received += header + len(str(header))
         package = bson.loads(data)
         return package
 
@@ -138,6 +154,8 @@ class Client(object):
         :return:"""
         package = bson.dumps({"type": packet_type, "data": packet_data})
         header = len(package).to_bytes(HEADER_SIZE, "big")
+
+        self.bytes_sent += len(package) + (len(str(len(package))))
 
         self.client.send(header)
         self.client.send(package)
@@ -258,15 +276,21 @@ class Client(object):
                     self.client.close()
 
                 elif message["type"] == "accepted":
+                    if self.verbose:
+                        self.print("debug: accepted by server")
                     self.print("Type /help for a list of commands", color="cyan")
                     self.print(f"you joined!", color="cyan")
                     continue
 
                 elif message["type"] == "server-auth":
+                    if self.verbose:
+                        self.print("debug: client-server authentication")
                     self.send("key", crypto.public_key)
                     continue
 
                 elif message["type"] == "info":
+                    if self.verbose:
+                        self.print("debug: client info exchange")
                     self.send(
                         "info",
                         {"nickname": crypto.encrypt(self.nickname, self.server_pub),
@@ -388,6 +412,11 @@ class Client(object):
                 self.unmanaged_packages.append(package)
             except socket.error:
                 self.print("[-] Disconnected from Server", color="red")
+                if self.verbose:
+                    self.print(self.bytes_sent)
+                    self.print(self.bytes_received)
+                    self.print("debug: byted per second sent/received: {}/{}".format(self.bytes_sent / (time.time() - self.connection_start) / 1000, self.bytes_received / (time.time() - self.connection_start) / 1000))
+                    self.print("debug: exit status 0")
                 return
 
     def thread_user_input(self, user_input=None):
@@ -395,7 +424,10 @@ class Client(object):
             if not self.tui:
                 user_input = input("")
             if user_input.startswith("/"):
-                cmd = user_input.replace("/", "").lower()
+                cmd = user_input.replace("/", "")
+                cmd = cmd.split(" ")
+                cmd[0] = cmd[0].lower()
+                cmd = " ".join(cmd)
                 self.handle_command(cmd.strip())
             elif len(user_input) > 0:
                 if self.tui:
@@ -484,7 +516,7 @@ class Client(object):
 
         elif cmd.startswith("whisper"):
             try:
-                name = cmd.split(" ")[1]
+                name = cmd.split(" ")[1].lower()
             except BaseException:
                 self.print("[-] Invalid input", color="yellow")
                 return
