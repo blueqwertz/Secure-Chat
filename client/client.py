@@ -95,6 +95,8 @@ class Client(object):
             try:
                 if addr == "localhost":
                     addr = socket.gethostbyname(socket.gethostname())
+                if addr.startswith("env"):
+                    addr = os.environ[addr[4:]]
                 if self.verbose:
                     self.print("debug: Trying to connect to {}:{}".format(addr, self.port))
                 self.client.connect((addr, self.port))
@@ -104,11 +106,12 @@ class Client(object):
                 continue
         if not self.host:
             self.print("[-] Could not connect to Server", color="red")
-            raise Exception
+            time.sleep(3)
+            sys.exit()
         if self.verbose:
             self.print("debug: Connected to {}".format(self.host))
-        else:
-            self.print("Connected to Server", color="green")
+
+        self.print("Connected to Server", color="green")
 
         self.connection_start = time.time()
 
@@ -290,12 +293,15 @@ class Client(object):
 
                 elif message["type"] == "info":
                     if self.verbose:
+                        self.print("debug: authenticating to {}:{} as '{}'".format(self.host, self.port, self.nickname))
                         self.print("debug: client info exchange")
                     self.send(
                         "info",
                         {"nickname": crypto.encrypt(self.nickname, self.server_pub),
                          "version": self.version,
                          "2fa": crypto.encrypt(self.auth, self.server_pub)})
+                    if self.verbose:
+                        self.print("debug: sent 2fa authentication")
                     continue
 
                 elif message["type"] == "key":
@@ -413,8 +419,6 @@ class Client(object):
             except socket.error:
                 self.print("[-] Disconnected from Server", color="red")
                 if self.verbose:
-                    self.print(self.bytes_sent)
-                    self.print(self.bytes_received)
                     self.print("debug: byted per second sent/received: {}/{}".format(self.bytes_sent / (time.time() - self.connection_start) / 1000, self.bytes_received / (time.time() - self.connection_start) / 1000))
                     self.print("debug: exit status 0")
                 return
@@ -431,8 +435,7 @@ class Client(object):
                 self.handle_command(cmd.strip())
             elif len(user_input) > 0:
                 if self.tui:
-                    self.print(f"[{self.nickname}] {user_input}",
-                               color=["white"])
+                    self.print(f"[{self.nickname}] {user_input}", color=["white"])
                 self.broadcast("message", {"messagedata": "{}: {}".format(self.nickname, user_input)})
             if self.tui:
                 return

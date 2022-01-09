@@ -4,7 +4,6 @@ import threading
 import socket
 import modules.crypto as crypto
 import time
-import hmac
 import sys
 import uuid
 import os

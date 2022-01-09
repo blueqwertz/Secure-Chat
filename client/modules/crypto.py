@@ -14,7 +14,7 @@ private_key = None
 cipher = None
 
 
-def generate_key():
+def generate_key(verbose):
     global public_key, private_key, keyPair
 
     done = False
@@ -28,7 +28,8 @@ def generate_key():
             print('Generating key pair ' + c, end="\r")
             time.sleep(0.1)
 
-    threading.Thread(target=animate).start()
+    if verbose:
+        threading.Thread(target=animate).start()
     keyPair = RSA.generate(1024)
     private_key = keyPair.export_key("PEM")
     public_key = keyPair.publickey().exportKey("PEM")

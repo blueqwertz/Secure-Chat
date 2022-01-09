@@ -1,7 +1,8 @@
 server:
     hostlist:
         - "localhost"
+        - "env:publicip"
     port: 10127
 client:
     random-nick: true
-    tui: false
+    tui: true
