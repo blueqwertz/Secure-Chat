@@ -4,7 +4,6 @@ import itertools
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Random import get_random_bytes
-import os
 
 keyPair = None
 AES_KEY = get_random_bytes(16)
