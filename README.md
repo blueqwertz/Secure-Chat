@@ -4,9 +4,11 @@
 
 ### How to install
 
-Run the install.bat file, which is located in the client/ folder to install all required dependencies.
+Run install.bat, which is located in the client/ folder to install all required dependencies.
 
-Configure the config.yaml file in the client folder like this
+Run install.bat, which is located in the server/ folder to install all required server dependencies.
+
+Configure config.yaml in the client folder like this...
 
 ```
 server:
@@ -18,13 +20,15 @@ client:
     tui: true
 ```
 
-...and the config.yaml in the server folder like this:
+...and config.yaml in the server folder like this:
 
 ```
 server:
     host: "0.0.0.0"
     port: 10127
 ```
+
+Finally run server/modules/keygen.py to generate the servers private and public key
 
 ### Demo Pictures
 
