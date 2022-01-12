@@ -287,8 +287,9 @@ class Client(object):
                 elif message["type"] == "server-auth":
                     if self.verbose:
                         self.print("debug: client-server authentication")
-                    # if self.server_pub and message["data"] != self.server_pub:
-                        # self.print("Public key does not match! Connection might have benn MITM'd!", color="red")
+                    if self.server_pub and self.server_pub != message["data"]:
+                        self.print("Server public key does not match!", color="red")
+                        self.print("The connection might be interrupted by a third party", color="red")
                     self.send("key", crypto.public_key)
                     continue
 
