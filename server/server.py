@@ -134,7 +134,7 @@ class Server():
         """Login a client."""
         try:
             # SERVER KEY EXCHANGE
-            client.send("server-auth", None)
+            client.send("server-auth", crypto.public_key)
             pub_key = client.recv()["data"]
 
             # CLIENT INFO RECV

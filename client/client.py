@@ -30,9 +30,9 @@ class Client(object):
 
         self.conf = self.read_conf()
 
-        self.host = None
-
         self.hostlist = None
+
+        self.host = None
         self.port = None
 
         self.verbose = "-v" in sys.argv
@@ -48,7 +48,7 @@ class Client(object):
         self.last_invite_room = None
         self.last_request_user = None
 
-        self.server_pub = None
+        self.server_pub = requests.get("https://secure-msg.000webhostapp.com/public.pem").text.replace("\\n", "\n").encode(self.format)
 
         self.useRandomNick = None
 
@@ -85,7 +85,6 @@ class Client(object):
         if self.tui:
             self.chat = Chat(debug=True)
         self.print("Starting Secure-Chat Client", color="green")
-        self.server_pub = requests.get("https://secure-msg.000webhostapp.com/public.pem").text.replace("\\n", "\n").encode(self.format)
         if self.verbose:
             self.print("debug: Got server public key")
         crypto.generate_key(self.verbose)
@@ -288,6 +287,8 @@ class Client(object):
                 elif message["type"] == "server-auth":
                     if self.verbose:
                         self.print("debug: client-server authentication")
+                    # if self.server_pub and message["data"] != self.server_pub:
+                        # self.print("Public key does not match! Connection might have benn MITM'd!", color="red")
                     self.send("key", crypto.public_key)
                     continue
 
