@@ -8,7 +8,7 @@ keyPair = RSA.generate(4096)
 private_key = keyPair.export_key("PEM")
 public_key = keyPair.publickey().exportKey("PEM")
 
-with open(".private.pem", "wb") as f:
+with open("server/modules/.private.pem", "wb") as f:
     f.write(private_key)
-with open("public.pem", "wb") as f:
+with open("server/modules/public.pem", "wb") as f:
     f.write(public_key)

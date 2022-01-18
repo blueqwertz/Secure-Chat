@@ -728,7 +728,7 @@ class Client(object):
             file_path = filedialog.askopenfilename()
             root.destroy()
             return file_path
-        except BaseException:
+        except Exception:
             return None
 
 
